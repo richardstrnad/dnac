@@ -1,0 +1,6 @@
+/target
+token*
+.env
+*.log
+.DS_Store
+src/main.rs
