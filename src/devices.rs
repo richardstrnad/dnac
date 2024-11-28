@@ -155,6 +155,103 @@ impl Device {
 
         Ok(devices)
     }
+
+    pub async fn add_device(dnac: &DNAC, device: AddDevice) -> anyhow::Result<()> {
+        let path = "/dna/intent/api/v1/network-device";
+        Ok(dnac.post(path, Some(device), true).await?)
+    }
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct AddDevice {
+    #[serde(rename = "ipAddress")]
+    pub ip_address: Vec<String>,
+    #[serde(rename = "type")]
+    pub device_type: DeviceType,
+    #[serde(rename = "userName")]
+    pub user_name: String,
+    #[serde(rename = "password")]
+    pub password: String,
+    #[serde(rename = "enablePassword")]
+    pub enable_password: String,
+    #[serde(rename = "cliTransport")]
+    pub cli_transport: CliTransport,
+    #[serde(rename = "snmpVersion")]
+    pub snmp_version: SnmpVersion,
+    #[serde(rename = "snmpUserName")]
+    pub snmp_user_name: String,
+    #[serde(rename = "snmpMode")]
+    pub snmp_mode: SnmpMode,
+    #[serde(rename = "snmpAuthPassphrase")]
+    pub snmp_auth_passphrase: String,
+    #[serde(rename = "snmpPrivPassphrase")]
+    pub snmp_priv_passphrase: String,
+    #[serde(rename = "snmpAuthProtocol")]
+    pub snmp_auth_protocol: SnmpAuthProtocol,
+    #[serde(rename = "snmpPrivProtocol")]
+    pub snmp_priv_protocol: SnmpPrivProtocol,
+    #[serde(rename = "netconfPort")]
+    pub netconf_port: u16,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub enum DeviceType {
+    #[default]
+    #[serde(rename = "NETWORK_DEVICE")]
+    NetworkDevice,
+    #[serde(rename = "COMPUTE_DEVICE")]
+    ComputeDevice,
+    #[serde(rename = "MERAKI_DASHBOARD")]
+    MerakiDashboard,
+    #[serde(rename = "THIRD_PARTY_DEVICE")]
+    ThirdPartyDevice,
+    #[serde(rename = "NODATACHANGE")]
+    NoDataChange,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub enum CliTransport {
+    #[default]
+    #[serde(rename = "ssh")]
+    Ssh,
+    #[serde(rename = "telnet")]
+    Telnet,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub enum SnmpVersion {
+    #[default]
+    #[serde(rename = "v3")]
+    V3,
+    #[serde(rename = "v2")]
+    V2,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub enum SnmpMode {
+    #[default]
+    #[serde(rename = "authPriv")]
+    AuthPriv,
+    #[serde(rename = "authNoPriv")]
+    AuthNoPriv,
+    #[serde(rename = "noAuthNoPriv")]
+    NoAuthNoPriv,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub enum SnmpAuthProtocol {
+    #[default]
+    #[serde(rename = "sha")]
+    Sha,
+    #[serde(rename = "md5")]
+    Md5,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub enum SnmpPrivProtocol {
+    #[default]
+    #[serde(rename = "AES128")]
+    Aes128,
 }
 
 #[async_trait::async_trait]

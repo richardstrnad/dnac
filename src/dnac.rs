@@ -2,7 +2,10 @@ use core::fmt;
 use std::{error::Error, fs};
 
 use anyhow::{anyhow, Result};
-use reqwest::StatusCode;
+use reqwest::{
+    header::{HeaderMap, HeaderValue},
+    StatusCode,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{event, Level};
@@ -65,6 +68,49 @@ pub struct PaginationBuilder {
     limit: u64,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct TaskInfo {
+    #[serde(rename = "taskId")]
+    pub task_id: String,
+    #[serde(rename = "url")]
+    pub url: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Task {
+    pub id: String,
+    #[serde(rename = "additionalStatusURL")]
+    pub additional_status_url: Option<String>,
+    pub data: Option<String>,
+    #[serde(rename = "endTime")]
+    pub end_time: Option<u64>,
+    #[serde(rename = "errorCode")]
+    pub error_code: Option<String>,
+    #[serde(rename = "errorKey")]
+    pub error_key: Option<String>,
+    #[serde(rename = "failureReason")]
+    pub failure_reason: Option<String>,
+    #[serde(rename = "instanceTenantId")]
+    pub instance_tenant_id: String,
+    #[serde(rename = "isError")]
+    pub is_error: bool,
+    #[serde(rename = "lastUpdate")]
+    pub last_update: Option<u64>,
+    #[serde(rename = "operationIdList")]
+    pub operation_id_list: Option<Value>,
+    #[serde(rename = "parentId")]
+    pub parent_id: Option<String>,
+    pub progress: String,
+    #[serde(rename = "rootId")]
+    pub root_id: Option<String>,
+    #[serde(rename = "serviceType")]
+    pub service_type: String,
+    #[serde(rename = "startTime")]
+    pub start_time: u64,
+    pub username: Option<String>,
+    pub version: u64,
+}
+
 impl DNAC {
     pub async fn new(
         token_file: String,
@@ -97,7 +143,8 @@ impl DNAC {
         let token = {
             if let Ok(mut token) = dnac.load_token() {
                 token.parse();
-                if token.valid() {
+                // if the token is still valid and valid for more than 10 min we use it
+                if token.valid() && token.valid_for() > 60 * 10 {
                     event!(
                         Level::INFO,
                         "Loaded token is still valid for {} sec and will be used",
@@ -200,14 +247,85 @@ impl DNAC {
                 return Err(data.into());
             }
             _ => {
-                //if path == "/dna/intent/api/v1/network-device" {
-                //    println!("{}: {:?}", path, data.text().await?);
-                //    return Err(anyhow!("Unexpected Result!"));
-                //}
                 let data = data.json().await?;
                 Ok(data)
             }
         }
+    }
+
+    // poll is a flag to indicate if we should poll the API for the result
+    pub async fn post<T>(&self, path: &str, data: T, poll: bool) -> Result<()>
+    where
+        T: Serialize,
+    {
+        let response = self
+            .client
+            .post(format!("{}{}", self.dnac, path))
+            .header("X-Auth-Token", &self.token.token)
+            .json(&data)
+            .send()
+            .await?;
+
+        match response.status() {
+            StatusCode::INTERNAL_SERVER_ERROR => {
+                let data = response.json::<ApiError>().await?;
+                return Err(data.into());
+            }
+            _ => {
+                // we assume that we got a TaskInfo back
+                if poll {
+                    let response = response.json::<Response<TaskInfo>>().await?;
+                    match response.response {
+                        ResponseType::Item(task_info) => {
+                            self.poll_task(task_info).await?;
+                        }
+                        _ => {
+                            return Err(anyhow!("Unexpected response"));
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
+    }
+
+    async fn poll_task(&self, mut task_info: TaskInfo) -> Result<()> {
+        event!(Level::DEBUG, "Polling Task: {:?}", task_info);
+        task_info.url.push_str("/tree/");
+        let mut task = self
+            .get::<Task>(task_info.url.as_str(), None, None)
+            .await?
+            .response;
+
+        loop {
+            match task {
+                ResponseType::Array(ref inner_tasks) => {
+                    if inner_tasks.iter().all(|t| t.end_time.is_some()) {
+                        if inner_tasks.iter().any(|t| t.is_error) {
+                            inner_tasks.iter().for_each(|t| {
+                                if t.is_error {
+                                    event!(Level::ERROR, "{task:?}");
+                                }
+                            });
+
+                            return Err(anyhow!("Task failed"));
+                        }
+                        break;
+                    } else {
+                        task = self.get::<Task>(&task_info.url, None, None).await?.response;
+                    }
+                }
+                _ => {
+                    return Err(anyhow!("Unexpected response"));
+                }
+            }
+
+            event!(Level::DEBUG, "Task is still running, sleep for 5 sec");
+            event!(Level::DEBUG, "Task: {:?}", task);
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        }
+
+        Ok(())
     }
 }
 
@@ -317,4 +435,19 @@ pub trait FetchableType: Sized {
 
 pub trait GetAll {
     fn get_all<T, E>(dnac: &DNAC) -> Result<Vec<T>, E>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_task() {
+        let task = r#"
+          {"version":1732811427209,"progress":"Inventory service adding devices","startTime":1732811427209,"serviceType":"Inventory service","isError":false,"instanceTenantId":"6307971e4289f95403c86831","id":"0193739c-0d88-78e4-ba0f-d82889fca555"}
+          "#;
+
+        let task: Task = serde_json::from_str(task).unwrap();
+        assert_eq!(task.id, "");
+    }
 }
