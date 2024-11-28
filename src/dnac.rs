@@ -4,6 +4,7 @@ use std::{error::Error, fs};
 use anyhow::{anyhow, Result};
 use reqwest::StatusCode;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::Value;
 use tracing::{event, Level};
 
 use super::platform::ReleaseSummary;
@@ -199,6 +200,10 @@ impl DNAC {
                 return Err(data.into());
             }
             _ => {
+                //if path == "/dna/intent/api/v1/network-device" {
+                //    println!("{}: {:?}", path, data.text().await?);
+                //    return Err(anyhow!("Unexpected Result!"));
+                //}
                 let data = data.json().await?;
                 Ok(data)
             }

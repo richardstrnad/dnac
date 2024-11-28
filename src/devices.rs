@@ -40,9 +40,9 @@ pub struct Device {
     pub collection_status: DeviceStatus,
     #[serde(rename = "managementIpAddress")]
     pub management_ip_address: String,
-    pub hostname: String,
+    pub hostname: Option<String>,
     pub description: Option<String>,
-    pub family: DeviceFamily,
+    pub family: Option<DeviceFamily>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -69,6 +69,7 @@ pub enum DeviceStatus {
 
 pub enum DeviceFilter {
     Family(DeviceFamily),
+    ManagementIPAddress(String),
 }
 
 #[derive(Debug, Error)]
@@ -92,6 +93,9 @@ impl Device {
             if let Some(filter) = filter {
                 match filter {
                     DeviceFilter::Family(family) => query.push(("family", family.to_string())),
+                    DeviceFilter::ManagementIPAddress(ip) => {
+                        query.push(("managementIpAddress", ip))
+                    }
                 }
             };
 
