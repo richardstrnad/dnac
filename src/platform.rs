@@ -1,6 +1,7 @@
-use super::DNAC;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+
+use crate::dnac::DNAC;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ReleaseSummary {

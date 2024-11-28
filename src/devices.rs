@@ -3,12 +3,9 @@ use thiserror::Error;
 use tracing::{event, Level};
 use uuid::Uuid;
 
-use crate::dnac::dnac::ResponseType;
+use crate::dnac::{ResponseType, DNAC};
 
-use super::{
-    dnac::{FetchableType, Pagination},
-    DNAC,
-};
+use super::dnac::{FetchableType, Pagination};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum DeviceFamily {

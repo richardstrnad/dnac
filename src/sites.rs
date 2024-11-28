@@ -6,9 +6,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{event, Level};
 use uuid::Uuid;
 
-use crate::dnac::dnac::ApiError;
-
-use super::{dnac::Pagination, DNAC};
+use crate::dnac::{ApiError, Pagination, DNAC};
 
 pub struct Sites;
 
