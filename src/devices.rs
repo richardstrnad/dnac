@@ -33,11 +33,38 @@ impl ToString for DeviceFamily {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Device {
     pub id: Uuid,
+    #[serde(rename = "collectionStatus")]
+    pub collection_status: DeviceStatus,
+    #[serde(rename = "managementIpAddress")]
+    pub management_ip_address: String,
+    pub hostname: String,
     pub description: Option<String>,
     pub family: DeviceFamily,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub enum DeviceStatus {
+    Unassociated,
+    Synchronizing,
+    #[serde(rename = "Sync Disabled")]
+    SyncDisabled,
+    #[serde(rename = "Could Not Synchronize")]
+    CouldNotSynchronize,
+    #[serde(rename = "Not Manageable")]
+    NotManageable,
+    Managed,
+    #[serde(rename = "Partial Collection Failure")]
+    PartialCollectionFailure,
+    Incomplete,
+    Unreachable,
+    #[serde(rename = "Wrong Credential")]
+    WrongCredential,
+    Reachable,
+    #[serde(rename = "In Progress")]
+    InProgress,
 }
 
 pub enum DeviceFilter {
