@@ -224,7 +224,7 @@ impl Site {
         }
     }
 
-    pub fn location_type(&self) -> String {
+    pub fn get_location_type(&self) -> String {
         match &self.location {
             Some(location) => location.location_type.clone(),
             None => "".to_string(),
