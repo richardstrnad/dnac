@@ -182,4 +182,52 @@ impl Site {
 
         self
     }
+
+    // we provide various getters which return a location value or an empty string
+    pub fn get_country(&self) -> String {
+        match &self.location {
+            Some(location) => match &location.country {
+                Some(country) => country.clone(),
+                None => "".to_string(),
+            },
+            None => "".to_string(),
+        }
+    }
+
+    pub fn get_address(&self) -> String {
+        match &self.location {
+            Some(location) => match &location.address {
+                Some(address) => address.clone(),
+                None => "".to_string(),
+            },
+            None => "".to_string(),
+        }
+    }
+
+    pub fn get_latitude(&self) -> String {
+        match &self.location {
+            Some(location) => match &location.latitude {
+                Some(latitude) => latitude.clone(),
+                None => "".to_string(),
+            },
+            None => "".to_string(),
+        }
+    }
+
+    pub fn get_longitude(&self) -> String {
+        match &self.location {
+            Some(location) => match &location.longitude {
+                Some(longitude) => longitude.clone(),
+                None => "".to_string(),
+            },
+            None => "".to_string(),
+        }
+    }
+
+    pub fn location_type(&self) -> String {
+        match &self.location {
+            Some(location) => location.location_type.clone(),
+            None => "".to_string(),
+        }
+    }
 }
