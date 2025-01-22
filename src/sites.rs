@@ -6,7 +6,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{event, Level};
 use uuid::Uuid;
 
-use crate::dnac::{ApiError, Pagination, DNAC};
+use crate::{
+    devices::MembershipDevice,
+    dnac::{ApiError, Pagination, DNAC},
+};
 
 pub struct Sites;
 
@@ -40,6 +43,10 @@ pub enum SiteFilter {
     Name(String),
     SiteID(Uuid),
     Type(SiteType),
+}
+
+pub enum SiteMembershipFilter {
+    MemberType(String),
 }
 
 #[derive(Clone, Copy)]
@@ -160,6 +167,30 @@ impl Sites {
         }
 
         Ok(sites)
+    }
+
+    pub async fn get_site_membership(
+        dnac: &DNAC,
+        site_id: Uuid,
+        pagination: Option<Pagination>,
+    ) -> Result<Vec<MembershipDevice>, SiteError> {
+        let path = format!("/dna/intent/api/v1/site-member/{}/member", site_id);
+        let query = vec![("memberType", "networkdevice".to_string())];
+
+        let device_data = dnac
+            .get::<MembershipDevice>(path.as_str(), Some(query.as_slice()), pagination)
+            .await;
+
+        match device_data {
+            Ok(device_data) => match device_data.response {
+                super::dnac::ResponseType::Array(data) => Ok(data.into_iter().map(|d| d).collect()),
+                super::dnac::ResponseType::Item(data) => Ok(vec![data]),
+            },
+            Err(e) => {
+                event!(Level::ERROR, "{e}");
+                Err(SiteError::GeneralError)
+            }
+        }
     }
 }
 

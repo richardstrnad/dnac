@@ -45,6 +45,19 @@ pub struct Device {
     pub family: Option<DeviceFamily>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct MembershipDevice {
+    #[serde(rename = "instanceUuid")]
+    pub id: Uuid,
+    #[serde(rename = "collectionStatus")]
+    pub collection_status: DeviceStatus,
+    #[serde(rename = "managementIpAddress")]
+    pub management_ip_address: String,
+    pub hostname: Option<String>,
+    pub description: Option<String>,
+    pub family: Option<DeviceFamily>,
+}
+
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub enum DeviceStatus {
     Unassociated,

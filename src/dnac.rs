@@ -2,10 +2,7 @@ use core::fmt;
 use std::{error::Error, fs};
 
 use anyhow::{anyhow, Result};
-use reqwest::{
-    header::{HeaderMap, HeaderValue},
-    StatusCode,
-};
+use reqwest::StatusCode;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{event, Level};
